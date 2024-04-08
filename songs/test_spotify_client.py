@@ -1,0 +1,26 @@
+from django.test import TestCase
+from mock import patch
+
+from songs.spotify.spotify_client import *
+
+
+class SpotifyClientTestCase(TestCase):
+    @patch(
+        "songs.spotify.spotify_client.SpotifyClient.get_artist_albums", autospec=True
+    )
+    def test_get_all_albums_calls(self, get_artist_albums_mock):
+        client = SpotifyClient()
+
+        with self.subTest(
+            msg="Test get all albums called once when should be called once"
+        ):
+            get_artist_albums_mock.return_value = [], None
+            client.get_all_artist_albums(artist_id="ARTIST_ID")
+            assert get_artist_albums_mock.call_count == 1
+
+        with self.subTest(
+            msg="Test get all albums called once when should be called multiple times"
+        ):
+            get_artist_albums_mock.side_effect = [([], None), ([], True)]
+            client.get_all_artist_albums(artist_id="ARTIST_ID")
+            assert get_artist_albums_mock.call_count == 2
