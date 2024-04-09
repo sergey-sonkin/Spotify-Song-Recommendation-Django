@@ -53,9 +53,7 @@ class SpotifyClient:
     def _get_request(self, endpoint: str, params: dict) -> requests.Response:
         response = requests.get(url=endpoint, headers=self._get_header(), params=params)
         if self.debug:
-            print("REQUEST:")
-            print("===")
-            print(response.request.__dict__)
+            print_request_and_response(response)
         return response
 
     def _parse_response(self, response: requests.Response) -> dict[str, str]:
@@ -164,3 +162,15 @@ class SpotifyClient:
         )
 
         return SpotifyTrackFeatures.from_dict(features_dict=response_json)
+
+    def get_multiple_track_features(self, track_ids: list[str]):
+        track_ids_string = ",".join(track_ids)
+        tracks_features_endpoint = f"{BASE_URL}/audio-features/?ids={track_ids_string}"
+
+        response_json = self.get_parse_and_error_handle_request(
+            endpoint=tracks_features_endpoint, retries=0, params={}
+        )
+        return [
+            SpotifyTrackFeatures.from_dict(features_dict=track_feature_dict)
+            for track_feature_dict in response_json["audio_features"]
+        ]
