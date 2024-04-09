@@ -123,7 +123,7 @@ class SpotifyTrackFeatures:
             key=features_dict["key"],
             liveness=features_dict["liveness"],
             loudness=features_dict["loudness"],
-            is_major=features_dict["is_major"],
+            is_major=features_dict["mode"],
             speechiness=features_dict["speechiness"],
             tempo=features_dict["tempo"],
             time_signature=features_dict["time_signature"],

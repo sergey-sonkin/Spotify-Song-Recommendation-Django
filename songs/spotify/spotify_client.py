@@ -3,7 +3,11 @@ import os
 import requests
 
 from songs.spotify.spotify_client_constants import *
-from songs.spotify.spotify_serializer import SpotifyAlbum, SpotifyTrack
+from songs.spotify.spotify_serializer import (
+    SpotifyAlbum,
+    SpotifyTrack,
+    SpotifyTrackFeatures,
+)
 
 
 class SpotifyClient:
@@ -138,18 +142,17 @@ class SpotifyClient:
 
         return tracks, has_next
 
-    def get_all_album_tracks(self, album_id, counter: int = 0) -> list[SpotifyTrack]:
-        tracks, next = self.get_album_tracks(album_id=album_id, page=counter)
+    def get_all_album_tracks(self, album_id, page: int = 0) -> list[SpotifyTrack]:
+        tracks, next = self.get_album_tracks(album_id=album_id, page=page)
         if not next:
             return tracks
-        return tracks + self.get_all_album_tracks(
-            album_id=album_id, counter=counter + 1
-        )
+        return tracks + self.get_all_album_tracks(album_id=album_id, page=page + 1)
 
-    def get_track_features(self, track_id: str, retries: int = 0):
+    def get_track_features(self, track_id: str):
         track_features_endpoint = f"{BASE_URL}/audio-features/{track_id}"
 
         response_json = self.get_parse_and_error_handle_request(
-            endpoint=track_features_endpoint, retries=retries, params={}
+            endpoint=track_features_endpoint, retries=0, params={}
         )
-        return response_json
+
+        return SpotifyTrackFeatures.from_dict(features_dict=response_json)
