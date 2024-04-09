@@ -46,13 +46,14 @@ class SpotifyClient:
             raise RuntimeError("No token initialized")
 
     def _get_request(
-        self, endpoint: str, page: int, extra_request_params: dict = {}
+        self, endpoint: str, page: int, **extra_request_params
     ) -> requests.Response:
         params = {
             "market": US_MARKET,
             "limit": MAX_LIMIT,
             "offset": page * MAX_LIMIT,
-        }.update(extra_request_params)
+        }
+        params.update(extra_request_params)
         response = requests.get(url=endpoint, headers=self._get_header(), params=params)
         return response
 
@@ -66,7 +67,9 @@ class SpotifyClient:
         self, endpoint: str, retries: int = 0, page: int = 0, **extra_request_params
     ):
         response = self._get_request(
-            endpoint=endpoint, extra_request_params=extra_request_params, page=page
+            endpoint=endpoint,
+            page=page,
+            **extra_request_params,
         )
         try:
             response_json = self._parse_response(response)
@@ -89,9 +92,10 @@ class SpotifyClient:
     ) -> tuple[list[SpotifyAlbum], bool]:
 
         albums_endpoint = f"{BASE_URL}/artists/{artist_id}/albums/"
-        include_groups_string = (
-            ",".join(album_type.value for album_type in include_groups),
+        include_groups_string = ",".join(
+            album_type.value for album_type in include_groups
         )
+
         response_json = self.get_parse_and_error_handle_request(
             endpoint=albums_endpoint,
             retries=retries,
@@ -104,11 +108,20 @@ class SpotifyClient:
 
         return albums, bool(response_json.get("next", None))
 
-    def get_all_artist_albums(self, artist_id: str, page: int = 0):
-        albums, next = self.get_artist_albums(artist_id=artist_id, page=page)
+    def get_all_artist_albums(
+        self,
+        artist_id: str,
+        page: int = 0,
+        include_groups: list[SpotifyAlbumType] = [SpotifyAlbumType.ALBUM],
+    ):
+        albums, next = self.get_artist_albums(
+            artist_id=artist_id, page=page, include_groups=include_groups
+        )
         if not next:
             return albums
-        return albums + self.get_all_artist_albums(artist_id=artist_id, page=page + 1)
+        return albums + self.get_all_artist_albums(
+            artist_id=artist_id, page=page + 1, include_groups=include_groups
+        )
 
     def get_album_tracks(
         self, album_id: str, counter: int = 0, retries: int = 0
