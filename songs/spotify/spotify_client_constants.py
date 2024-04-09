@@ -1,5 +1,7 @@
 from enum import Enum
 
+from requests import Response
+
 MAX_LIMIT = 50
 BASE_URL = "https://api.spotify.com/v1"
 US_MARKET = "US"
@@ -47,3 +49,12 @@ def raise_correct_error(code, message):
             raise RateLimitError(message)
         case _:
             raise GenericError(message)
+
+
+def print_request_and_response(response: Response):
+    print("REQUEST:")
+    print("-------------------------")
+    print(response.request.__dict__)
+    print("RESPONSE:")
+    print("-------------------------")
+    print(response.json())

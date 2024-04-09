@@ -25,7 +25,6 @@ class SpotifyClient:
     def _get_token(self) -> str:
         client_id = str(os.getenv("SPOTIFY_CLIENT_ID"))
         client_secret = str(os.getenv("SPOTIFY_CLIENT_SECRET"))
-
         data = (
             "grant_type=client_credentials&client_id="
             + client_id
