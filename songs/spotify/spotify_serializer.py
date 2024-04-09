@@ -50,8 +50,85 @@ class SpotifyTrack:
         )
 
 
+pitch_class_dict = {
+    -1: "Unknown",
+    0: "C",
+    1: "C#",
+    2: "D",
+    3: "D#",
+    4: "E",
+    5: "F",
+    6: "F#",
+    7: "G",
+    8: "G#",
+    9: "A",
+    10: "A#",
+    11: "B",
+}
+
+
 class SpotifyTrackFeatures:
     spotify_id: str
+    acousticness: float
+    danceability: float
+    energy: float
+    instrumentalness: float
+    key: int
+    liveness: float
+    loudness: float
+    is_major: bool
+    speechiness: float
+    tempo: float
+    time_signature: int
+    valence: float
+
+    def __init__(
+        self,
+        spotify_id: str,
+        acousticness: float,
+        danceability: float,
+        energy: float,
+        instrumentalness: float,
+        key: int,
+        liveness: float,
+        loudness: float,
+        is_major: bool,
+        speechiness: float,
+        tempo: float,
+        time_signature: int,
+        valence: float,
+    ):
+        self.spotify_id = spotify_id
+        self.acousticness = acousticness
+        self.danceability = danceability
+        self.energy = energy
+        self.instrumentalness = instrumentalness
+        self.key = key
+        self.liveness = liveness
+        self.loudness = loudness
+        self.is_major = is_major
+        self.speechiness = speechiness
+        self.tempo = tempo
+        self.time_signature = time_signature
+        self.valence = valence
+
+    @classmethod
+    def from_dict(cls, features_dict):
+        return SpotifyTrackFeatures(
+            spotify_id=features_dict["id"],
+            acousticness=features_dict["acousticness"],
+            danceability=features_dict["danceability"],
+            energy=features_dict["energy"],
+            instrumentalness=features_dict["instrumentalness"],
+            key=features_dict["key"],
+            liveness=features_dict["liveness"],
+            loudness=features_dict["loudness"],
+            is_major=features_dict["is_major"],
+            speechiness=features_dict["speechiness"],
+            tempo=features_dict["tempo"],
+            time_signature=features_dict["time_signature"],
+            valence=features_dict["valence"],
+        )
 
 
 class SpotifyAlbum:

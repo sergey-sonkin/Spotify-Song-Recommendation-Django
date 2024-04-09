@@ -45,16 +45,12 @@ class SpotifyClient:
         else:
             raise RuntimeError("No token initialized")
 
-    def _get_request(
-        self, endpoint: str, page: int, **extra_request_params
-    ) -> requests.Response:
-        params = {
-            "market": US_MARKET,
-            "limit": MAX_LIMIT,
-            "offset": page * MAX_LIMIT,
-        }
-        params.update(extra_request_params)
+    def _get_request(self, endpoint: str, params: dict) -> requests.Response:
         response = requests.get(url=endpoint, headers=self._get_header(), params=params)
+        if self.debug:
+            print("REQUEST:")
+            print("===")
+            print(response.request.__dict__)
         return response
 
     def _parse_response(self, response: requests.Response) -> dict[str, str]:
@@ -64,24 +60,18 @@ class SpotifyClient:
         return response_json
 
     def get_parse_and_error_handle_request(
-        self, endpoint: str, retries: int = 0, page: int = 0, **extra_request_params
+        self, endpoint: str, params: dict, retries: int = 0
     ):
-        response = self._get_request(
-            endpoint=endpoint,
-            page=page,
-            **extra_request_params,
-        )
+        response = self._get_request(endpoint=endpoint, params=params)
         try:
-            response_json = self._parse_response(response)
+            return self._parse_response(response)
         except BadTokenError:
             self.token = self._get_token()
             return self.get_parse_and_error_handle_request(
                 endpoint=endpoint,
+                params=params,
                 retries=retries + 1,
-                page=page,
-                **extra_request_params,
             )
-        return response_json
 
     def get_artist_albums(
         self,
@@ -95,18 +85,22 @@ class SpotifyClient:
         include_groups_string = ",".join(
             album_type.value for album_type in include_groups
         )
+        params = {
+            "market": US_MARKET,
+            "limit": MAX_LIMIT,
+            "offset": page * MAX_LIMIT,
+            "include_groups": include_groups_string,
+        }
 
         response_json = self.get_parse_and_error_handle_request(
-            endpoint=albums_endpoint,
-            retries=retries,
-            page=page,
-            include_groups=include_groups_string,
+            endpoint=albums_endpoint, retries=retries, params=params
         )
 
         album_data = response_json["items"]
         albums = [SpotifyAlbum.from_dict(album_dict) for album_dict in album_data]
+        has_next = bool(response_json.get("next", None))
 
-        return albums, bool(response_json.get("next", None))
+        return albums, has_next
 
     def get_all_artist_albums(
         self,
@@ -124,77 +118,38 @@ class SpotifyClient:
         )
 
     def get_album_tracks(
-        self, album_id: str, counter: int = 0, retries: int = 0
+        self, album_id: str, page: int = 0, retries: int = 0
     ) -> tuple[list[SpotifyTrack], bool]:
-        def get_request():
-            album_tracks_endpoint = f"{BASE_URL}/albums/{album_id}/tracks"
-            params = {
-                "market": US_MARKET,
-                "limit": MAX_LIMIT,
-                "offset": counter * MAX_LIMIT,
-            }
-            response = requests.get(
-                url=album_tracks_endpoint, headers=self._get_header(), params=params
-            )
-            return response
+        album_tracks_endpoint = f"{BASE_URL}/albums/{album_id}/tracks"
 
-        def check_response_for_errors(response_json):
-            if error := response_json.get("error"):
-                if error["status"] == 401 and retries == 0:
-                    self.token = self._get_token()
-                    return self.get_album_tracks(
-                        album_id=album_id, counter=counter, retries=retries + 1
-                    )
-                else:
-                    error_string = (
-                        "Get albums error. Status: {status}, Message: {message}".format(
-                            status=error["status"],
-                            message=error["message"],
-                        )
-                    )
-                    raise RuntimeError(error_string)
+        params = {
+            "market": US_MARKET,
+            "limit": MAX_LIMIT,
+            "offset": page * MAX_LIMIT,
+        }
+        response_json = self.get_parse_and_error_handle_request(
+            endpoint=album_tracks_endpoint, params=params, retries=retries
+        )
 
-        response_json = get_request().json()
-        check_response_for_errors(response_json)
         tracks = [
             SpotifyTrack.from_dict(track_dict) for track_dict in response_json["items"]
         ]
-        return tracks, bool(response_json.get("next", None))
+        has_next = bool(response_json.get("next", None))
+
+        return tracks, has_next
 
     def get_all_album_tracks(self, album_id, counter: int = 0) -> list[SpotifyTrack]:
-        tracks, next = self.get_album_tracks(album_id=album_id, counter=counter)
+        tracks, next = self.get_album_tracks(album_id=album_id, page=counter)
         if not next:
             return tracks
         return tracks + self.get_all_album_tracks(
             album_id=album_id, counter=counter + 1
         )
 
-    # def get_track_features(self, track_id):
-    #     def get_request():
-    #         album_tracks_endpoint = f"{BASE_URL}/albums/{album_id}/tracks"
-    #         params = {
-    #             "market": US_MARKET,
-    #             "include_groups": "album",
-    #             "limit": MAX_LIMIT,
-    #             "offset": counter * MAX_LIMIT,
-    #         }
-    #         response = requests.get(
-    #             url=album_tracks_endpoint, headers=self.get_header(), params=params
-    #         )
-    #         return response
+    def get_track_features(self, track_id: str, retries: int = 0):
+        track_features_endpoint = f"{BASE_URL}/audio-features/{track_id}"
 
-    #     def check_response_for_errors(response_json):
-    #         if error := response_json.get("error"):
-    #             if error["status"] == 401 and retries == 0:
-    #                 self.token = self.get_token()
-    #                 return self.get_album_tracks(
-    #                     album_id=album_id, counter=counter, retries=retries + 1
-    #                 )
-    #             else:
-    #                 error_string = (
-    #                     "Get albums error. Status: {status}, Message: {message}".format(
-    #                         status=error["status"],
-    #                         message=error["message"],
-    #                     )
-    #                 )
-    #                 raise RuntimeError(error_string)
+        response_json = self.get_parse_and_error_handle_request(
+            endpoint=track_features_endpoint, retries=retries, params={}
+        )
+        return response_json
