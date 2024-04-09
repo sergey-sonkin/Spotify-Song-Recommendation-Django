@@ -1,10 +1,12 @@
 from django.db import models
 
+SPOTIFY_UUID_LENGTH = 22
+
 
 # Create your models here.
 class Song(models.Model):
-    spotify_id = models.CharField(primary_key=True, max_length=50)
-    track_name = models.CharField(max_length=50)
+    id = models.CharField(primary_key=True, max_length=SPOTIFY_UUID_LENGTH)
+    track_name = models.CharField()
     duration_ms = models.IntegerField()
     release_date = models.DateField()
     popularity = models.IntegerField()
@@ -28,10 +30,10 @@ class SongFeatures(models.Model):
 
 
 class Album(models.Model):
-    id = models.CharField(primary_key=True, max_length=50)
-    name = models.CharField(max_length=50)
+    id = models.CharField(primary_key=True, max_length=SPOTIFY_UUID_LENGTH)
+    name = models.CharField()
 
 
 class Artist(models.Model):
-    id = models.CharField(primary_key=True, max_length=50)
-    name = models.CharField(max_length=50)
+    id = models.CharField(primary_key=True, max_length=SPOTIFY_UUID_LENGTH)
+    name = models.CharField()
