@@ -5,6 +5,7 @@ import requests
 from songs.spotify.spotify_client_constants import *
 from songs.spotify.spotify_serializer import (
     SpotifyAlbum,
+    SpotifyArtist,
     SpotifyTrack,
     SpotifyTrackFeatures,
 )
@@ -64,7 +65,7 @@ class SpotifyClient:
         return response_json
 
     def get_parse_and_error_handle_request(
-        self, endpoint: str, params: dict, retries: int = 0
+        self, endpoint: str, params: dict = {}, retries: int = 0
     ):
         response = self._get_request(endpoint=endpoint, params=params)
         try:
@@ -76,6 +77,13 @@ class SpotifyClient:
                 params=params,
                 retries=retries + 1,
             )
+
+    def get_artist(self, artist_id: str) -> SpotifyArtist:
+        artists_endpoint = f"{BASE_URL}/artists/{artist_id}"
+        response_json = self.get_parse_and_error_handle_request(
+            endpoint=artists_endpoint
+        )
+        return SpotifyArtist.from_dict(response_json)
 
     def get_artist_albums(
         self,
