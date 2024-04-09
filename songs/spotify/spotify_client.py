@@ -148,11 +148,16 @@ class SpotifyClient:
 
         return tracks, has_next
 
-    def get_all_album_tracks(self, album_id, page: int = 0) -> list[SpotifyTrack]:
+    def get_all_album_tracks(self, album_id: str, page: int = 0) -> list[SpotifyTrack]:
         tracks, next = self.get_album_tracks(album_id=album_id, page=page)
         if not next:
             return tracks
         return tracks + self.get_all_album_tracks(album_id=album_id, page=page + 1)
+
+    def get_multiple_albums_tracks(
+        self, album_ids: list[str]
+    ) -> dict[str, list[SpotifyTrack]]:
+        return {album_id: self.get_all_album_tracks(album_id) for album_id in album_ids}
 
     def get_track_features(self, track_id: str):
         track_features_endpoint = f"{BASE_URL}/audio-features/{track_id}"
@@ -163,10 +168,11 @@ class SpotifyClient:
 
         return SpotifyTrackFeatures.from_dict(features_dict=response_json)
 
-    def get_multiple_track_features(self, track_ids: list[str]):
+    def _get_max_track_features(
+        self, track_ids: list[str]
+    ) -> list[SpotifyTrackFeatures]:
         track_ids_string = ",".join(track_ids)
         tracks_features_endpoint = f"{BASE_URL}/audio-features/?ids={track_ids_string}"
-
         response_json = self.get_parse_and_error_handle_request(
             endpoint=tracks_features_endpoint, retries=0, params={}
         )
@@ -174,3 +180,18 @@ class SpotifyClient:
             SpotifyTrackFeatures.from_dict(features_dict=track_feature_dict)
             for track_feature_dict in response_json["audio_features"]
         ]
+
+    ## To test:
+    ## - Assert called right number of times with 1 track_id, 100 track_ids, 501 track_ids
+    ## - Assert on subsequent loops correct IDs are still being called
+    def get_multiple_track_features(
+        self, track_ids: list[str]
+    ) -> list[SpotifyTrackFeatures]:
+        MAX_TRACKS = 100
+        pages = max(len(track_ids) // MAX_TRACKS, 1)
+        ret = []
+        for page_number in range(pages):
+            tracks_ids_subset = track_ids[100 * page_number : 100 * (page_number + 1)]
+            features = self._get_max_track_features(tracks_ids_subset)
+            ret += features
+        return ret
