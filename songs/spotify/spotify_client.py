@@ -190,7 +190,8 @@ class SpotifyClient:
         pages = max(len(track_ids) // MAX_TRACKS, 1)
         ret = []
         for page_number in range(pages):
-            tracks_ids_subset = track_ids[100 * page_number : 100 * (page_number + 1)]
-            features = self._get_max_track_features(tracks_ids_subset)
-            ret += features
+            tracks_ids_subset = track_ids[
+                MAX_TRACKS * page_number : MAX_TRACKS * (page_number + 1)
+            ]
+            ret += self._get_max_track_features(tracks_ids_subset)
         return ret
