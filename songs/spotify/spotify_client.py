@@ -116,7 +116,7 @@ class SpotifyClient:
         artist_id: str,
         page: int = 0,
         include_groups: list[SpotifyAlbumType] = [SpotifyAlbumType.ALBUM],
-    ):
+    ) -> list[SpotifyAlbum]:
         albums, next = self.get_artist_albums(
             artist_id=artist_id, page=page, include_groups=include_groups
         )
@@ -158,7 +158,7 @@ class SpotifyClient:
     ) -> dict[str, list[SpotifyTrack]]:
         return {album_id: self.get_all_album_tracks(album_id) for album_id in album_ids}
 
-    def get_track_features(self, track_id: str):
+    def _get_track_features(self, track_id: str):
         track_features_endpoint = f"{BASE_URL}/audio-features/{track_id}"
 
         response_json = self.get_parse_and_error_handle_request(
@@ -167,7 +167,7 @@ class SpotifyClient:
 
         return SpotifyTrackFeatures.from_dict(features_dict=response_json)
 
-    def _get_max_track_features(
+    def get_up_to_one_hundred_tracks_features(
         self, track_ids: list[str]
     ) -> list[SpotifyTrackFeatures]:
         track_ids_string = ",".join(track_ids)
@@ -186,12 +186,9 @@ class SpotifyClient:
     def get_multiple_track_features(
         self, track_ids: list[str]
     ) -> list[SpotifyTrackFeatures]:
-        MAX_TRACKS = 100
-        pages = max(len(track_ids) // MAX_TRACKS, 1)
+        num_pages = max(len(track_ids) // 100, 1)
         ret = []
-        for page_number in range(pages):
-            tracks_ids_subset = track_ids[
-                MAX_TRACKS * page_number : MAX_TRACKS * (page_number + 1)
-            ]
-            ret += self._get_max_track_features(tracks_ids_subset)
+        for page_number in range(num_pages):
+            tracks_ids_subset = track_ids[100 * page_number : 100 * (page_number + 1)]
+            ret += self.get_up_to_one_hundred_tracks_features(tracks_ids_subset)
         return ret

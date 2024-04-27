@@ -1,22 +1,85 @@
-from songs.models import Artist
+from songs.models import Album, Artist, Song, SongFeatures
 from songs.spotify.spotify_client import SpotifyClient
+from songs.spotify.spotify_client_constants import SpotifyAlbumType
+from songs.spotify.spotify_serializer import SpotifyAlbum
+
+client = SpotifyClient()
 
 
-def step_one(artist_id: str):
+def get_or_create_artist(artist_id: str) -> tuple[Artist, bool]:
     try:
-        artist = Artist.objects.get(id=artist_id)
+        return Artist.objects.get(id=artist_id), True
     except Artist.DoesNotExist:
-        print("hiii")
+        spotify_artist = client.get_artist(artist_id=artist_id)
+        db_artist = Artist.objects.import_spotify_artist(
+            spotify_artist
+        )  # pyright: ignore
+        db_artist.save()
+        return db_artist, False
 
 
-def get_import_artist_tracks(artist_id):
-    return
-    ## Step 1: Check if artist already exists and recent, otherwise get artist
-    ## Step 2: Get artists albums
-    ## Step 3: Filter duplicate albums
-    ## Step 4: From each album, import songs
-    ## Step 5: For each song, get song features
-    ## Step 6: Get single albums
-    ## Step 7: Filter duplicate singles
-    ##
-    ## Step 8: Retrieve singes' features
+def get_artists_albums(db_artist: Artist):
+    if db_artist.recently_updated:
+        return
+    db_album_ids = Album.objects.filter(artists=db_artist.id).values_list("id")
+    spotify_albums = client.get_all_artist_albums(artist_id=db_artist.id)
+    for spotify_album in spotify_albums:
+        if spotify_album.id in db_album_ids:
+            continue
+
+
+def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]):
+    names: dict[str, list[SpotifyAlbum]] = {}
+    for album in spotify_albums:
+        names[album.name] = [*names.get(album.name, []), album]
+    return names
+
+
+## Steps for new artist
+## Get list of all albums from Spotify
+## Get list of all tracks for those albums from Spotify
+## First resolve albums - which need to go in
+## Then go through singles - resolve which need to go in
+## Then get song features for all tracks
+def import_new_artist_albums(db_artist: Artist):
+    all_spotify_albums = client.get_all_artist_albums(
+        artist_id=db_artist.id, include_groups=[SpotifyAlbumType.ALBUM]
+    )
+    db_albums = [
+        Album.objects.import_spotify_album(album=spotify_album)  # pyright: ignore
+        for spotify_album in all_spotify_albums
+    ]
+    return db_albums
+
+
+def get_artist_track_features(artist_id: str) -> list[SongFeatures]:
+    db_artist, is_existing = get_or_create_artist(artist_id=artist_id)
+
+    ## If artist was existing and was recently updated, we can just grab their tracks
+    if is_existing and db_artist.recently_updated:
+        db_song_ids = Song.objects.filter(artist_id=artist_id).values_list("id")
+        db_song_features = SongFeatures.objects.filter(pk__in=db_song_ids)
+        ret = list(db_song_features)
+        return ret
+    elif is_existing:
+        raise Exception("Todo!")
+
+    return import_new_artist(artist_id)
+
+    ## If artist was not existing, we can just grab their tracks
+
+
+def get_non_existing_artist_track_features(artist_id: str) -> list[SongFeatures]:
+    albums = client.get_all_artist_albums(artist_id=artist_id)
+
+
+## Steps for returning artist
+## Get current list of albums
+## Get total list of albums
+## Find albums that need to be updated
+## If list is zero, return
+## Within these albums, find duplicates. Resolve whether we should keep old or new
+## If
+
+## Get all new songs across those albums
+## For each of those songs, find duplicates

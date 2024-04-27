@@ -10,8 +10,11 @@ django-stubs = "*"
 ptipython = "*"
 ipython = "*"
 mock = "*"
+django-extensions = "*"
+factory-boy = "*"
 
 [dev-packages]
+ipykernel = "*"
 
 [requires]
 python_version = "3.12"

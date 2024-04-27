@@ -1,21 +1,23 @@
 from datetime import date
 
+from songs.spotify.spotify_client_constants import SpotifyAlbumType
+
 
 class SpotifyArtist:
-    spotify_id: str
+    id: str
     name: str
 
-    def __init__(self, spotify_id: str, name: str):
-        self.spotify_id = spotify_id
+    def __init__(self, id: str, name: str):
+        self.id = id
         self.name = name
 
     @classmethod
     def from_dict(cls, artist_dict):
-        return SpotifyArtist(spotify_id=artist_dict["id"], name=artist_dict["name"])
+        return SpotifyArtist(id=artist_dict["id"], name=artist_dict["name"])
 
 
 class SpotifyTrack:
-    spotify_id: str
+    id: str
     name: str
     artists: list[SpotifyArtist]
     duration_ms: int
@@ -24,13 +26,13 @@ class SpotifyTrack:
 
     def __init__(
         self,
-        spotify_id: str,
+        id: str,
         name: str,
         artists: list[SpotifyArtist],
         duration_ms: int,
         is_explicit: bool,
     ):
-        self.spotify_id = spotify_id
+        self.id = id
         self.name = name
         self.artists = artists
         self.duration_ms = duration_ms
@@ -39,7 +41,7 @@ class SpotifyTrack:
     @classmethod
     def from_dict(cls, track_dict):
         return SpotifyTrack(
-            spotify_id=track_dict["id"],
+            id=track_dict["id"],
             name=track_dict["name"],
             artists=[
                 SpotifyArtist.from_dict(artist_dict)
@@ -68,7 +70,7 @@ pitch_class_dict = {
 
 
 class SpotifyTrackFeatures:
-    spotify_id: str
+    id: str
     acousticness: float
     danceability: float
     energy: float
@@ -84,7 +86,7 @@ class SpotifyTrackFeatures:
 
     def __init__(
         self,
-        spotify_id: str,
+        id: str,
         acousticness: float,
         danceability: float,
         energy: float,
@@ -98,7 +100,7 @@ class SpotifyTrackFeatures:
         time_signature: int,
         valence: float,
     ):
-        self.spotify_id = spotify_id
+        self.id = id
         self.acousticness = acousticness
         self.danceability = danceability
         self.energy = energy
@@ -115,7 +117,7 @@ class SpotifyTrackFeatures:
     @classmethod
     def from_dict(cls, features_dict):
         return SpotifyTrackFeatures(
-            spotify_id=features_dict["id"],
+            id=features_dict["id"],
             acousticness=features_dict["acousticness"],
             danceability=features_dict["danceability"],
             energy=features_dict["energy"],
@@ -132,31 +134,41 @@ class SpotifyTrackFeatures:
 
 
 class SpotifyAlbum:
-    spotify_id: str
+    id: str
     name: str
     artists: list[SpotifyArtist]
     release_date: date
+    album_type: SpotifyAlbumType
 
     def __init__(
         self,
-        spotify_id: str,
+        id: str,
         name: str,
         artists: list[SpotifyArtist],
         release_date: date,
+        album_type: SpotifyAlbumType,
     ):
-        self.spotify_id = spotify_id
+        self.id = id
         self.name = name
         self.artists = artists
         self.release_date = release_date
+        self.album_type = album_type
 
     @classmethod
     def from_dict(cls, album_dict):
         return SpotifyAlbum(
-            spotify_id=album_dict["id"],
+            id=album_dict["id"],
             name=album_dict["name"],
             release_date=date.fromisoformat(album_dict["release_date"]),
             artists=[
                 SpotifyArtist.from_dict(artist_dict)
                 for artist_dict in album_dict["artists"]
             ],
+            album_type=album_dict["type"],
         )
+
+
+class SpotifyAlbumWithTracks:
+    album: SpotifyAlbum
+    tracks: list[SpotifyTrack]
+    more_tracks: bool
