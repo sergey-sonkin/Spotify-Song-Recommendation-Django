@@ -28,10 +28,30 @@ def get_artists_albums(db_artist: Artist):
             continue
 
 
-def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]):
+def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyAlbum]:
     names: dict[str, list[SpotifyAlbum]] = {}
+
+    ## TODO: Create a better system than just filtering on album name
     for album in spotify_albums:
         names[album.name] = [*names.get(album.name, []), album]
+
+    singleton_albums = []
+    for album_name, duplicate_albums in names.items():
+        if len(duplicate_albums) == 1:
+            singleton_albums.append(duplicate_albums[0])
+            continue
+        ## First - filter on explicit values
+        ids = [album.id for album in duplicate_albums]
+        tracks_dict = SpotifyClient().get_multiple_albums_tracks(album_ids=ids)
+        explicit_album_names = [
+            album_name
+            for album_name, tracks in tracks_dict.items()
+            if tracks[0].is_explicit
+        ]
+        if len(explicit_album_names) == 1:
+            singleton_albums.append(explicit_album_names[0])
+            continue
+
     return names
 
 
