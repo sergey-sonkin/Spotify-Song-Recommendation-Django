@@ -80,6 +80,7 @@ def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyA
         )
         if one_explicit_album:
             singleton_albums.append(one_explicit_album)
+            continue
 
         ## Second - filter on more recently released
         most_recent_album = max(remaining_albums_1, key=attrgetter("release_date"))
