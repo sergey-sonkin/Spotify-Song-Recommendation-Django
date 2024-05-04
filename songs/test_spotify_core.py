@@ -16,3 +16,6 @@ class SpotifyClientTestCase(TestCase):
                 len(filtered) + 3,
                 msg="2024/05/04 - 3 albums should get filtered",
             )
+
+    def test_import_artists_albums(self):
+        albums = import_artist_albums(artist_id="7dGJo4pcD2V6oG8kP0tJRR")
