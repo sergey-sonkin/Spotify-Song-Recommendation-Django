@@ -63,6 +63,7 @@ def filter_on_explicit_values(
         for album, tracks in zip(spotify_albums, tracks_dict.values())
         if tracks[0].is_explicit
     ]
+
     match len(explicit_albums):
         case 1:
             return explicit_albums[0], []
