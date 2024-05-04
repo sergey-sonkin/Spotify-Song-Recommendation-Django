@@ -132,13 +132,14 @@ def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyA
 ## First resolve albums - which need to go in
 ## Then go through singles - resolve which need to go in
 ## Then get song features for all tracks
-def import_new_artist_albums(db_artist: Artist):
+def import_artist_albums(artist_id):
     all_spotify_albums = client.get_all_artist_albums(
-        artist_id=db_artist.id, include_groups=[SpotifyAlbumType.ALBUM]
+        artist_id=artist_id, include_groups=[SpotifyAlbumType.ALBUM]
     )
+    albums_to_import = filter_duplicate_albums(all_spotify_albums)
     db_albums = [
-        Album.objects.import_spotify_album(album=spotify_album)  # pyright: ignore
-        for spotify_album in all_spotify_albums
+        Album.objects.import_spotify_album(album=spotify_album)  ## type: ignore
+        for spotify_album in albums_to_import
     ]
     return db_albums
 
