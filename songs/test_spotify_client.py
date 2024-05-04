@@ -6,7 +6,8 @@ from songs.spotify.spotify_client import *
 
 class SpotifyClientTestCase(TestCase):
     @patch(
-        target="songs.spotify.spotify_client.SpotifyClient.get_artist_albums", autospec=True
+        target="songs.spotify.spotify_client.SpotifyClient.get_artist_albums",
+        autospec=True,
     )
     def test_get_all_albums_calls(self, get_artist_albums_mock):
         client = SpotifyClient()
