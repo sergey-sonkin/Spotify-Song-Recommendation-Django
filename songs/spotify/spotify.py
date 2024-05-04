@@ -28,13 +28,20 @@ def get_artists_albums(db_artist: Artist):
         return
     db_album_ids = Album.objects.filter(artists=db_artist.id).values_list("id")
     spotify_albums = client.get_all_artist_albums(artist_id=db_artist.id)
+
     for spotify_album in spotify_albums:
         if spotify_album.id in db_album_ids:
             continue
 
 
 def parse_album_name(album_name: str) -> str:
-    return album_name.strip().lower().removesuffix(" (deluxe)")
+    return (
+        album_name.strip()
+        .lower()
+        .removesuffix(" (deluxe)")
+        .removesuffix(" (expanded edition)")
+        .removesuffix(" deluxe edition")
+    )
 
 
 def test_parse_album_name():
