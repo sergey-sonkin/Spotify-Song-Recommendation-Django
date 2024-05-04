@@ -46,8 +46,7 @@ class AlbumManager(models.Manager):
             for spotify_artist in spotify_artists
         ]
         db_album = self.create(id=album.id, name=album.name)
-        for db_artist in db_artists:
-            db_album.artists.set(db_artist)
+        db_album.artists.set(db_artists)
         return db_album
 
 
