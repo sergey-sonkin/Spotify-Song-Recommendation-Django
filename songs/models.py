@@ -40,7 +40,15 @@ class Artist(models.Model):
 
 class AlbumManager(models.Manager):
     def import_spotify_album(self, album: SpotifyAlbum):
-        return self.create(id=album.id, name=album.name)
+        spotify_artists = album.artists
+        db_artists: list[SpotifyArtist] = [
+            Artist.objects.get_or_import(spotify_artist=spotify_artist)  # type: ignore
+            for spotify_artist in spotify_artists
+        ]
+        db_album = self.create(id=album.id, name=album.name)
+        for db_artist in db_artists:
+            db_album.artists.set(db_artist)
+        return db_album
 
 
 class Album(models.Model):
