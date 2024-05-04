@@ -49,6 +49,7 @@ def group_albums(input_albums: list[SpotifyAlbum]) -> dict[str, list[SpotifyAlbu
 def filter_on_explicit_values(
     spotify_albums: list[SpotifyAlbum],
 ) -> tuple[Optional[SpotifyAlbum], list[SpotifyAlbum]]:
+
     ids = [album.id for album in spotify_albums]
     tracks_dict = SpotifyClient().get_multiple_albums_tracks(album_ids=ids)
     explicit_albums = [
@@ -95,6 +96,16 @@ def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyA
         remaining_albums_2 = most_recent_albums
 
         ## Third - filter on number of tracks (more is better)
+        ids = [album.id for album in remaining_albums_2]
+        tracks_dict = SpotifyClient().get_multiple_albums_tracks(album_ids=ids)
+        lens = [len(tracks) for tracks in tracks_dict.values()]
+        max_len = max(lens)
+        max_length_albums = [
+            album for album, len in zip(remaining_albums_2, lens) if len == max_len
+        ]
+        if True:
+            singleton_albums.append(max_length_albums[0])
+            continue
 
     return singleton_albums
 
