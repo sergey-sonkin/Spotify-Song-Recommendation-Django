@@ -33,17 +33,22 @@ def get_artists_albums(db_artist: Artist):
             continue
 
 
-def get_max_keys(input_dict: dict):
-    max_value = max(input_dict.values())
-    keys = [key for key, value in input_dict.items() if value == max_value]
-    return keys, max_value
+def parse_album_name(album_name: str) -> str:
+    return album_name.strip().lower().removesuffix(" (deluxe)")
+
+
+def test_parse_album_name():
+    tests = {"Album name": "album name", "very long album (DeLuXE)": "very long album"}
+    for input, output in tests.items():
+        assert parse_album_name(input) == output
 
 
 def group_albums(input_albums: list[SpotifyAlbum]) -> dict[str, list[SpotifyAlbum]]:
     names: dict[str, list[SpotifyAlbum]] = {}
     ## TODO: Create a better system than just filtering on album name
     for album in input_albums:
-        names[album.name] = [*names.get(album.name, []), album]
+        parsed_name = parse_album_name(album_name=album.name)
+        names[parsed_name] = [*names.get(parsed_name, []), album]
     return names
 
 
