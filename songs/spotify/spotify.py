@@ -1,4 +1,5 @@
 import datetime
+import logging
 from operator import attrgetter
 from typing import Optional
 
@@ -107,6 +108,8 @@ def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyA
             singleton_albums.append(max_length_albums[0])
             continue
 
+    diff = len(spotify_albums) - len(singleton_albums)
+    logging.info(f"We removed {diff} songs")
     return singleton_albums
 
 
