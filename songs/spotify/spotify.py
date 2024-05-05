@@ -126,13 +126,24 @@ def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyA
     return singleton_albums
 
 
+def import_album_songs(db_albums: list[Album]):
+    album_ids = [db_album.id for db_album in db_albums]
+    spotify_tracks_dict = SpotifyClient().get_multiple_albums_tracks(album_ids)
+    ret = []
+    for db_album, spotify_tracks_list in zip(db_albums, spotify_tracks_dict.values()):
+        for spotify_track in spotify_tracks_list:
+            song = Song.objects.import_spotify_track(track=spotify_track, album=db_album)  # type: ignore
+            ret.append(song)
+    return ret
+
+
 ## Steps for new artist
 ## Get list of all albums from Spotify
 ## Get list of all tracks for those albums from Spotify
 ## First resolve albums - which need to go in
 ## Then go through singles - resolve which need to go in
 ## Then get song features for all tracks
-def import_artist_albums(artist_id):
+def import_artist_albums_songs(artist_id):
     all_spotify_albums = client.get_all_artist_albums(
         artist_id=artist_id, include_groups=[SpotifyAlbumType.ALBUM]
     )
@@ -141,7 +152,8 @@ def import_artist_albums(artist_id):
         Album.objects.import_spotify_album(album=spotify_album)  ## type: ignore
         for spotify_album in albums_to_import
     ]
-    return db_albums
+    db_songs = import_album_songs(db_albums)
+    return db_songs
 
 
 def get_artist_track_features(artist_id: str) -> list[SongFeatures]:
