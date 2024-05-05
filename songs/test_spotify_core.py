@@ -18,4 +18,4 @@ class SpotifyClientTestCase(TestCase):
             )
 
     def test_import_artists_albums(self):
-        albums = import_artist_albums(artist_id="7dGJo4pcD2V6oG8kP0tJRR")
+        albums = import_artist_albums_songs(artist_id="7dGJo4pcD2V6oG8kP0tJRR")
