@@ -58,15 +58,28 @@ class Album(models.Model):
 
 
 class SongManager(models.Manager):
-    def import_spotify_track(self, track: SpotifyTrack):
-        return self.create(id=track.id, track_name=track.name)
+    def import_spotify_track(self, track: SpotifyTrack, album: Album):
+        db_track = self.create(
+            id=track.id,
+            track_name=track.name,
+            duration_ms=track.duration_ms,
+            popularity=track.popularity,
+            is_explicit=track.is_explicit,
+            album=album,
+        )
+        db_artists: list[SpotifyArtist] = [
+            Artist.objects.get_or_import(spotify_artist=spotify_artist)  # type: ignore
+            for spotify_artist in track.artists
+        ]
+        db_track.artists.set(db_artists)
+        return db_track
 
 
 class Song(models.Model):
     id = models.CharField(primary_key=True, max_length=SPOTIFY_UUID_LENGTH)
     track_name = models.CharField(max_length=ARBITRARY_LENGTH)
     duration_ms = models.IntegerField()
-    release_date = models.DateField()
+    release_date = models.DateField(auto_now_add=True)  ## very temporary workaround
     popularity = models.IntegerField()
     is_explicit = models.BooleanField(default=True)
     artists = models.ManyToManyField(Artist)
