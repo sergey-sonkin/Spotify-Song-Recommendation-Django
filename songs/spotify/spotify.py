@@ -126,6 +126,18 @@ def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyA
     return singleton_albums
 
 
+def import_artist_unique_albums(artist_id: str) -> list[Album]:
+    all_spotify_albums = client.get_all_artist_albums(
+        artist_id=artist_id, include_groups=[SpotifyAlbumType.ALBUM]
+    )
+    albums_to_import = filter_duplicate_albums(all_spotify_albums)
+    db_albums = [
+        Album.objects.import_spotify_album(album=spotify_album)  ## type: ignore
+        for spotify_album in albums_to_import
+    ]
+    return db_albums
+
+
 def import_album_songs(db_albums: list[Album]):
     album_ids = [db_album.id for db_album in db_albums]
     spotify_tracks_dict = SpotifyClient().get_multiple_albums_tracks(album_ids)
@@ -137,6 +149,15 @@ def import_album_songs(db_albums: list[Album]):
     return ret
 
 
+def import_song_features(db_songs: list[Song]) -> list[SongFeatures]:
+    song_ids = [song.id for song in db_songs]
+    song_features = SpotifyClient().get_multiple_track_features(track_ids=song_ids)
+    return [
+        SongFeatures.objects.import_song_features(song_feature)  # type: ignore
+        for song_feature in song_features
+    ]
+
+
 ## Steps for new artist
 ## Get list of all albums from Spotify
 ## Get list of all tracks for those albums from Spotify
@@ -144,16 +165,11 @@ def import_album_songs(db_albums: list[Album]):
 ## Then go through singles - resolve which need to go in
 ## Then get song features for all tracks
 def import_artist_albums_songs(artist_id):
-    all_spotify_albums = client.get_all_artist_albums(
-        artist_id=artist_id, include_groups=[SpotifyAlbumType.ALBUM]
-    )
-    albums_to_import = filter_duplicate_albums(all_spotify_albums)
-    db_albums = [
-        Album.objects.import_spotify_album(album=spotify_album)  ## type: ignore
-        for spotify_album in albums_to_import
-    ]
+    db_albums = import_artist_unique_albums(artist_id)
     db_songs = import_album_songs(db_albums)
-    return db_songs
+    db_song_features = import_song_features(db_songs)
+
+    return db_song_features
 
 
 def get_artist_track_features(artist_id: str) -> list[SongFeatures]:
