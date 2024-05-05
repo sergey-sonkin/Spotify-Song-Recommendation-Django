@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 
 from songs.spotify.spotify_client_constants import SpotifyAlbumType
 
@@ -30,12 +31,14 @@ class SpotifyTrack:
         name: str,
         artists: list[SpotifyArtist],
         duration_ms: int,
+        popularity: int,
         is_explicit: bool,
     ):
         self.id = id
         self.name = name
         self.artists = artists
         self.duration_ms = duration_ms
+        self.popularity = popularity
         self.is_explicit = is_explicit
 
     @classmethod
@@ -49,6 +52,7 @@ class SpotifyTrack:
             ],
             duration_ms=track_dict["duration_ms"],
             is_explicit=track_dict.get("is_explicit", False),
+            popularity=track_dict.get("popularity", -1),
         )
 
 
