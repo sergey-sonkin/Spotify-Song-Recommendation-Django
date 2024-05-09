@@ -1,4 +1,3 @@
-import datetime
 import logging
 from operator import attrgetter
 from typing import Optional
@@ -52,7 +51,7 @@ def test_parse_album_name():
 
 def group_albums(input_albums: list[SpotifyAlbum]) -> dict[str, list[SpotifyAlbum]]:
     names: dict[str, list[SpotifyAlbum]] = {}
-    ## TODO: Create a better system than just filtering on album name
+    # TODO: Create a better system than just filtering on album name
     for album in input_albums:
         parsed_name = parse_album_name(album_name=album.name)
         names[parsed_name] = [*names.get(parsed_name, []), album]
@@ -75,7 +74,7 @@ def filter_on_explicit_values(
         case 1:
             return explicit_albums[0], []
         case 0:
-            return None, spotify_albums  ## if none are explicit, we just continue
+            return None, spotify_albums  # if none are explicit, just continue
         case _:
             return None, explicit_albums
 
@@ -89,7 +88,7 @@ def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyA
             singleton_albums.append(duplicate_albums[0])
             continue
 
-        ## First - filter on explicit values
+        # First - filter on explicit values
         one_explicit_album, remaining_albums_1 = filter_on_explicit_values(
             duplicate_albums
         )
@@ -97,7 +96,7 @@ def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyA
             singleton_albums.append(one_explicit_album)
             continue
 
-        ## Second - filter on more recently released
+        # Second - filter on more recently released
         most_recent_album = max(remaining_albums_1, key=attrgetter("release_date"))
         most_recent_albums = [
             album
@@ -109,7 +108,7 @@ def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyA
             continue
         remaining_albums_2 = most_recent_albums
 
-        ## Third - filter on number of tracks (more is better)
+        # Third - filter on number of tracks (more is better)
         ids = [album.id for album in remaining_albums_2]
         tracks_dict = SpotifyClient().get_multiple_albums_tracks(album_ids=ids)
         lens = [len(tracks) for tracks in tracks_dict.values()]
@@ -158,12 +157,12 @@ def import_song_features(db_songs: list[Song]) -> list[SongFeatures]:
     ]
 
 
-## Steps for new artist
-## Get list of all albums from Spotify
-## Get list of all tracks for those albums from Spotify
-## First resolve albums - which need to go in
-## Then go through singles - resolve which need to go in
-## Then get song features for all tracks
+# Steps for new artist
+# Get list of all albums from Spotify
+# Get list of all tracks for those albums from Spotify
+# First resolve albums - which need to go in
+# Then go through singles - resolve which need to go in
+# Then get song features for all tracks
 def import_artist_albums_songs(artist_id):
     db_albums = import_artist_unique_albums(artist_id)
     db_songs = import_album_songs(db_albums)
@@ -175,7 +174,7 @@ def import_artist_albums_songs(artist_id):
 def get_artist_track_features(artist_id: str) -> list[SongFeatures]:
     db_artist, is_existing = get_or_create_artist(artist_id=artist_id)
 
-    ## If artist was existing and was recently updated, we can just grab their tracks
+    # If artist was existing and was recently updated, we can just grab their tracks
     if is_existing and db_artist.recently_updated:
         db_song_ids = Song.objects.filter(artist_id=artist_id).values_list("id")
         db_song_features = SongFeatures.objects.filter(pk__in=db_song_ids)

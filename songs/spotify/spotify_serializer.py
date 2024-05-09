@@ -1,5 +1,4 @@
 from datetime import date
-from typing import Optional
 
 from songs.spotify.spotify_client_constants import SpotifyAlbumType
 
