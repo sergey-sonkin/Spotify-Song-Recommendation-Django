@@ -19,3 +19,11 @@ class SpotifyClientTestCase(TestCase):
 
     def test_import_artists_albums(self):
         albums = import_artist_albums_songs(artist_id="7dGJo4pcD2V6oG8kP0tJRR")
+
+    def test_parse_album_name(self):
+        tests = {
+            "Album name": "album name",
+            "very long album (DeLuXE)": "very long album",
+        }
+        for input, output in tests.items():
+            assert parse_album_name(input) == output

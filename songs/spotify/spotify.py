@@ -43,15 +43,8 @@ def parse_album_name(album_name: str) -> str:
     )
 
 
-def test_parse_album_name():
-    tests = {"Album name": "album name", "very long album (DeLuXE)": "very long album"}
-    for input, output in tests.items():
-        assert parse_album_name(input) == output
-
-
 def group_albums(input_albums: list[SpotifyAlbum]) -> dict[str, list[SpotifyAlbum]]:
     names: dict[str, list[SpotifyAlbum]] = {}
-    # TODO: Create a better system than just filtering on album name
     for album in input_albums:
         parsed_name = parse_album_name(album_name=album.name)
         names[parsed_name] = [*names.get(parsed_name, []), album]
