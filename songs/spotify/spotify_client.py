@@ -1,10 +1,12 @@
 import os
+from itertools import batched
 
 import requests
 
 from songs.spotify.spotify_client_constants import *
 from songs.spotify.spotify_serializer import (
     SpotifyAlbum,
+    SpotifyAlbumWithTracks,
     SpotifyArtist,
     SpotifyTrack,
     SpotifyTrackFeatures,
@@ -82,6 +84,10 @@ class SpotifyClient:
         )
         return SpotifyArtist.from_dict(response_json)
 
+    # This endpoint does not return tracks
+    # https://developer.spotify.com/documentation/web-api/reference/get-an-artists-albums
+    # If we want these to have tracks we have to get them later
+    # It makes sense for us to "initialize" these albums
     def get_artist_albums(
         self,
         artist_id: str,
@@ -126,6 +132,33 @@ class SpotifyClient:
             artist_id=artist_id, page=page + 1, include_groups=include_groups
         )
 
+    def get_album_partials(
+        self, albums_list: list[SpotifyAlbum]
+    ) -> list[SpotifyAlbumWithTracks]:
+        batched_albums = list(batched(albums_list, 20))
+        for albums in batched_albums:
+            album_ids_string = ",".join([album.id for album in albums_list])
+            albums_endpoint = f"{BASE_URL}/albums?ids={album_ids_string}"
+            params = {"market": US_MARKET}
+            response_json: dict = self.get_parse_and_error_handle_request(
+                endpoint=albums_endpoint, params=params
+            )
+            album_objects_list: list[dict] = response_json["albums"]
+            albums = [
+                SpotifyAlbumWithTracks(
+                    album=spotify_album,
+                    tracks=[
+                        SpotifyTrack.from_dict(track_dict)
+                        for track_dict in album_object["tracks"]["items"]
+                    ],
+                    next_page=album_object["tracks"]["next"] or None,
+                )
+                for spotify_album, album_object in zip(albums, album_objects_list)
+            ]
+
+        return albums
+
+    # https://developer.spotify.com/documentation/web-api/reference/get-an-albums-tracks
     def get_album_tracks(
         self, album_id: str, page: int = 0, retries: int = 0
     ) -> tuple[list[SpotifyTrack], bool]:
