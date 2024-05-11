@@ -3,10 +3,20 @@ from itertools import batched
 
 import requests
 
-from songs.spotify.spotify_client_constants import *
+from songs.spotify.spotify_client_constants import (
+    BASE_URL,
+    GET_TOKEN_ENDPOINT,
+    GET_TOKEN_HEADER,
+    MAX_LIMIT,
+    US_MARKET,
+    BadTokenError,
+    SpotifyAlbumType,
+    print_request_and_response,
+    raise_correct_error,
+)
 from songs.spotify.spotify_serializer import (
-    SpotifyAlbum,
-    SpotifyAlbumWithTracks,
+    SpotifyAlbumBase,
+    SpotifyAlbumPartial,
     SpotifyArtist,
     SpotifyTrack,
     SpotifyTrackFeatures,
@@ -94,8 +104,7 @@ class SpotifyClient:
         page: int = 0,
         retries: int = 0,
         include_groups: list[SpotifyAlbumType] = [SpotifyAlbumType.ALBUM],
-    ) -> tuple[list[SpotifyAlbum], bool]:
-
+    ) -> tuple[list[SpotifyAlbumBase], bool]:
         albums_endpoint = f"{BASE_URL}/artists/{artist_id}/albums/"
         include_groups_string = ",".join(
             album_type.value for album_type in include_groups
@@ -112,7 +121,7 @@ class SpotifyClient:
         )
 
         album_data = response_json["items"]
-        albums = [SpotifyAlbum.from_dict(album_dict) for album_dict in album_data]
+        albums = [SpotifyAlbumBase.from_dict(album_dict) for album_dict in album_data]
         has_next = bool(response_json.get("next", None))
 
         return albums, has_next
@@ -122,7 +131,7 @@ class SpotifyClient:
         artist_id: str,
         page: int = 0,
         include_groups: list[SpotifyAlbumType] = [SpotifyAlbumType.ALBUM],
-    ) -> list[SpotifyAlbum]:
+    ) -> list[SpotifyAlbumBase]:
         albums, next = self.get_artist_albums(
             artist_id=artist_id, page=page, include_groups=include_groups
         )
@@ -133,8 +142,8 @@ class SpotifyClient:
         )
 
     def __get_album_partials(
-        self, albums_tuple: tuple[SpotifyAlbum, ...]
-    ) -> list[SpotifyAlbumWithTracks]:
+        self, albums_tuple: tuple[SpotifyAlbumBase, ...]
+    ) -> list[SpotifyAlbumPartial]:
         album_ids_string = ",".join([album.id for album in albums_tuple])
         albums_endpoint = f"{BASE_URL}/albums?ids={album_ids_string}"
         params = {"market": US_MARKET}
@@ -143,7 +152,7 @@ class SpotifyClient:
         )
         album_objects_list: list[dict] = response_json["albums"]
         albums = [
-            SpotifyAlbumWithTracks(
+            SpotifyAlbumPartial(
                 album=spotify_album,
                 tracks=[
                     SpotifyTrack.from_dict(track_dict)
@@ -156,8 +165,8 @@ class SpotifyClient:
         return albums
 
     def get_album_partials(
-        self, albums_list: list[SpotifyAlbum]
-    ) -> list[SpotifyAlbumWithTracks]:
+        self, albums_list: list[SpotifyAlbumBase]
+    ) -> list[SpotifyAlbumPartial]:
         batched_albums = batched(albums_list, 20)
         ret = []
         for albums_batch in batched_albums:

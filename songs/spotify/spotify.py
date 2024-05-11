@@ -5,7 +5,7 @@ from typing import Optional
 from songs.models import Album, Artist, Song, SongFeatures
 from songs.spotify.spotify_client import SpotifyClient
 from songs.spotify.spotify_client_constants import SpotifyAlbumType
-from songs.spotify.spotify_serializer import SpotifyAlbum
+from songs.spotify.spotify_serializer import SpotifyAlbum, SpotifyAlbumBase
 
 client = SpotifyClient()
 
@@ -43,8 +43,10 @@ def parse_album_name(album_name: str) -> str:
     )
 
 
-def group_albums(input_albums: list[SpotifyAlbum]) -> dict[str, list[SpotifyAlbum]]:
-    names: dict[str, list[SpotifyAlbum]] = {}
+def group_albums(
+    input_albums: list[SpotifyAlbumBase],
+) -> dict[str, list[SpotifyAlbumBase]]:
+    names: dict[str, list[SpotifyAlbumBase]] = {}
     for album in input_albums:
         parsed_name = parse_album_name(album_name=album.name)
         names[parsed_name] = [*names.get(parsed_name, []), album]
@@ -52,9 +54,8 @@ def group_albums(input_albums: list[SpotifyAlbum]) -> dict[str, list[SpotifyAlbu
 
 
 def filter_on_explicit_values(
-    spotify_albums: list[SpotifyAlbum],
-) -> tuple[Optional[SpotifyAlbum], list[SpotifyAlbum]]:
-
+    spotify_albums: list[SpotifyAlbumBase],
+) -> tuple[Optional[SpotifyAlbumBase], list[SpotifyAlbumBase]]:
     ids = [album.id for album in spotify_albums]
     tracks_dict = SpotifyClient().get_multiple_albums_tracks(album_ids=ids)
     explicit_albums = [
@@ -72,10 +73,12 @@ def filter_on_explicit_values(
             return None, explicit_albums
 
 
-def filter_duplicate_albums(spotify_albums: list[SpotifyAlbum]) -> list[SpotifyAlbum]:
+def filter_duplicate_albums(
+    spotify_albums: list[SpotifyAlbumBase],
+) -> list[SpotifyAlbum]:
     grouped_albums = group_albums(input_albums=spotify_albums)
-
     singleton_albums = []
+
     for album_name, duplicate_albums in grouped_albums.items():
         if len(duplicate_albums) == 1:
             singleton_albums.append(duplicate_albums[0])
@@ -136,7 +139,9 @@ def import_album_songs(db_albums: list[Album]):
     ret = []
     for db_album, spotify_tracks_list in zip(db_albums, spotify_tracks_dict.values()):
         for spotify_track in spotify_tracks_list:
-            song = Song.objects.import_spotify_track(track=spotify_track, album=db_album)  # type: ignore
+            song = Song.objects.import_spotify_track(
+                track=spotify_track, album=db_album
+            )  # type: ignore
             ret.append(song)
     return ret
 

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import models
 
 from songs.spotify.spotify_serializer import (
-    SpotifyAlbum,
+    SpotifyAlbumBase,
     SpotifyArtist,
     SpotifyTrack,
     SpotifyTrackFeatures,
@@ -44,7 +44,7 @@ class Artist(models.Model):
 
 
 class AlbumManager(models.Manager):
-    def import_spotify_album(self, album: SpotifyAlbum):
+    def import_spotify_album(self, album: SpotifyAlbumBase):
         spotify_artists = album.artists
         db_artists: list[SpotifyArtist] = [
             Artist.objects.get_or_import(spotify_artist=spotify_artist)  # type: ignore

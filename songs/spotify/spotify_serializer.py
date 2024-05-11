@@ -137,7 +137,7 @@ class SpotifyTrackFeatures:
         )
 
 
-class SpotifyAlbum:
+class SpotifyAlbumBase:
     id: str
     name: str
     artists: list[SpotifyArtist]
@@ -160,7 +160,7 @@ class SpotifyAlbum:
 
     @classmethod
     def from_dict(cls, album_dict):
-        return SpotifyAlbum(
+        return SpotifyAlbumBase(
             id=album_dict["id"],
             name=album_dict["name"],
             release_date=date.fromisoformat(album_dict["release_date"]),
@@ -172,14 +172,14 @@ class SpotifyAlbum:
         )
 
 
-class SpotifyAlbumWithTracks:
-    album: SpotifyAlbum
+class SpotifyAlbumPartial:
+    album: SpotifyAlbumBase
     tracks: list[SpotifyTrack]
     next_page: Optional[str]
 
     def __init__(
         self,
-        album: SpotifyAlbum,
+        album: SpotifyAlbumBase,
         tracks: list[SpotifyTrack],
         next_page: Optional[str],
     ):
@@ -187,7 +187,15 @@ class SpotifyAlbumWithTracks:
         self.tracks = tracks
         self.next_page = next_page
 
-    @classmethod
-    def from_dict(cls, album_partial_dict):
-        tracks_object = album_partial_dict["tracks"]
-        next_page = tracks_object["next"] or None
+
+class SpotifyAlbum:
+    album: SpotifyAlbumBase
+    tracks: list[SpotifyTrack]
+
+    def __init__(
+        self,
+        album: SpotifyAlbumBase,
+        tracks: list[SpotifyTrack],
+    ):
+        self.album = album
+        self.tracks = tracks
