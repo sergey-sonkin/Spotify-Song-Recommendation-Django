@@ -25,3 +25,12 @@ class SpotifyClientTestCase(TestCase):
             get_artist_albums_mock.side_effect = [([], None), ([], True)]
             client.get_all_artist_albums(artist_id="ARTIST_ID")
             assert get_artist_albums_mock.call_count == 2
+
+    # Todo: Change test to be mock patched
+    def test_get_album_partials(self):
+        client = SpotifyClient()
+        albums = client.get_all_artist_albums("7dGJo4pcD2V6oG8kP0tJRR")
+        partial_albums = client.get_album_partials(albums)
+        self.assertEqual(len(partial_albums), 18)
+        for partial_album in partial_albums:
+            self.assertEqual(partial_album.next_page, None)

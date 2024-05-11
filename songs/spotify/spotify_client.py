@@ -132,31 +132,37 @@ class SpotifyClient:
             artist_id=artist_id, page=page + 1, include_groups=include_groups
         )
 
+    def __get_album_partials(
+        self, albums_tuple: tuple[SpotifyAlbum, ...]
+    ) -> list[SpotifyAlbumWithTracks]:
+        album_ids_string = ",".join([album.id for album in albums_tuple])
+        albums_endpoint = f"{BASE_URL}/albums?ids={album_ids_string}"
+        params = {"market": US_MARKET}
+        response_json: dict = self.get_parse_and_error_handle_request(
+            endpoint=albums_endpoint, params=params
+        )
+        album_objects_list: list[dict] = response_json["albums"]
+        albums = [
+            SpotifyAlbumWithTracks(
+                album=spotify_album,
+                tracks=[
+                    SpotifyTrack.from_dict(track_dict)
+                    for track_dict in album_object["tracks"]["items"]
+                ],
+                next_page=album_object["tracks"]["next"] or None,
+            )
+            for spotify_album, album_object in zip(albums_tuple, album_objects_list)
+        ]
+        return albums
+
     def get_album_partials(
         self, albums_list: list[SpotifyAlbum]
     ) -> list[SpotifyAlbumWithTracks]:
-        batched_albums = list(batched(albums_list, 20))
-        for albums in batched_albums:
-            album_ids_string = ",".join([album.id for album in albums_list])
-            albums_endpoint = f"{BASE_URL}/albums?ids={album_ids_string}"
-            params = {"market": US_MARKET}
-            response_json: dict = self.get_parse_and_error_handle_request(
-                endpoint=albums_endpoint, params=params
-            )
-            album_objects_list: list[dict] = response_json["albums"]
-            albums = [
-                SpotifyAlbumWithTracks(
-                    album=spotify_album,
-                    tracks=[
-                        SpotifyTrack.from_dict(track_dict)
-                        for track_dict in album_object["tracks"]["items"]
-                    ],
-                    next_page=album_object["tracks"]["next"] or None,
-                )
-                for spotify_album, album_object in zip(albums, album_objects_list)
-            ]
-
-        return albums
+        batched_albums = batched(albums_list, 20)
+        ret = []
+        for albums_batch in batched_albums:
+            ret += self.__get_album_partials(albums_tuple=albums_batch)
+        return ret
 
     # https://developer.spotify.com/documentation/web-api/reference/get-an-albums-tracks
     def get_album_tracks(
