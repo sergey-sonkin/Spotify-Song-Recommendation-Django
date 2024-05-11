@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 
 from songs.spotify.spotify_client_constants import SpotifyAlbumType
 
@@ -174,4 +175,19 @@ class SpotifyAlbum:
 class SpotifyAlbumWithTracks:
     album: SpotifyAlbum
     tracks: list[SpotifyTrack]
-    more_tracks: bool
+    next_page: Optional[str]
+
+    def __init__(
+        self,
+        album: SpotifyAlbum,
+        tracks: list[SpotifyTrack],
+        next_page: Optional[str],
+    ):
+        self.album = album
+        self.tracks = tracks
+        self.next_page = next_page
+
+    @classmethod
+    def from_dict(cls, album_partial_dict):
+        tracks_object = album_partial_dict["tracks"]
+        next_page = tracks_object["next"] or None
