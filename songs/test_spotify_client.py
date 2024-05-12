@@ -1,7 +1,7 @@
 from django.test import TestCase
 from mock import patch
 
-from songs.spotify.spotify_client import *
+from songs.spotify.spotify_client import SpotifyClient
 
 
 class SpotifyClientTestCase(TestCase):
