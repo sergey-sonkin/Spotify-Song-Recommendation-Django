@@ -173,18 +173,21 @@ class SpotifyAlbumBase:
 
 
 class SpotifyAlbumPartial:
-    album: SpotifyAlbumBase
+    base: SpotifyAlbumBase
     tracks: list[SpotifyTrack]
+    total_tracks: int
     next_page: Optional[str]
 
     def __init__(
         self,
-        album: SpotifyAlbumBase,
+        base: SpotifyAlbumBase,
         tracks: list[SpotifyTrack],
+        total_tracks: int,
         next_page: Optional[str],
     ):
-        self.album = album
+        self.base = base
         self.tracks = tracks
+        self.total_tracks = total_tracks
         self.next_page = next_page
 
 

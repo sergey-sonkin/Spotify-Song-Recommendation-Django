@@ -153,12 +153,13 @@ class SpotifyClient:
         album_objects_list: list[dict] = response_json["albums"]
         albums = [
             SpotifyAlbumPartial(
-                album=spotify_album,
+                base=spotify_album,
                 tracks=[
                     SpotifyTrack.from_dict(track_dict)
                     for track_dict in album_object["tracks"]["items"]
                 ],
                 next_page=album_object["tracks"]["next"] or None,
+                total_tracks=album_object["total_tracks"],
             )
             for spotify_album, album_object in zip(albums_tuple, album_objects_list)
         ]
