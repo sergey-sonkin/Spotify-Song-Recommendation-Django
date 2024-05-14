@@ -52,7 +52,7 @@ class SpotifyClient:
 
         try:
             return response.json()["access_token"]
-        except:
+        except requests.JSONDecodeError:
             raise RuntimeError("Unable to get token")
 
     def _get_header(self) -> dict[str, str]:
