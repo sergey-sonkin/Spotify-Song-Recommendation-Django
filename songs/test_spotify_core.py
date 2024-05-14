@@ -1,7 +1,7 @@
 from django.test import TestCase
-from mock import patch
 
-from songs.spotify.spotify import *
+from songs.spotify.spotify import filter_duplicate_albums, import_artist_albums_songs, parse_album_name
+from songs.spotify.spotify_client import SpotifyClient
 
 
 class SpotifyClientTestCase(TestCase):
@@ -26,4 +26,4 @@ class SpotifyClientTestCase(TestCase):
             "very long album (DeLuXE)": "very long album",
         }
         for input, output in tests.items():
-            assert parse_album_name(input) == output
+            self.assertEqual(parse_album_name(input), output)
