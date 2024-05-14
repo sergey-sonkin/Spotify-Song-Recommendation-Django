@@ -47,7 +47,7 @@ def parse_album_name(album_name: str) -> str:
 
 
 def group_albums(
-        input_albums: list[SpotifyAlbumPartial],
+    input_albums: list[SpotifyAlbumPartial],
 ) -> dict[str, list[SpotifyAlbumPartial]]:
     names: dict[str, list[SpotifyAlbumPartial]] = {}
     for album in input_albums:
@@ -57,7 +57,7 @@ def group_albums(
 
 
 def filter_on_explicit_values(
-        spotify_albums: list[SpotifyAlbumPartial],
+    spotify_albums: list[SpotifyAlbumPartial],
 ) -> tuple[Optional[SpotifyAlbumPartial], list[SpotifyAlbumPartial]]:
     id_tracks_tuple_list = [(album, album.tracks) for album in spotify_albums]
     explicit_albums = [
@@ -74,7 +74,7 @@ def filter_on_explicit_values(
 
 
 def filter_duplicate_albums(
-        spotify_albums: list[SpotifyAlbumBase],
+    spotify_albums: list[SpotifyAlbumBase],
 ) -> list[SpotifyAlbumPartial]:
     spotify_album_partials = SpotifyClient().get_album_partials(
         albums_list=spotify_albums
@@ -96,9 +96,13 @@ def filter_duplicate_albums(
             continue
 
         # Second - filter on more recently released
-        most_recent_album = max([album.base for album in remaining_albums_1], key=attrgetter("release_date"))
+        most_recent_album = max(
+            [album.base for album in remaining_albums_1], key=attrgetter("release_date")
+        )
         most_recent_albums = [
-            album for album in remaining_albums_1 if album.base.release_date == most_recent_album.release_date
+            album
+            for album in remaining_albums_1
+            if album.base.release_date == most_recent_album.release_date
         ]
         if len(most_recent_albums) == 1:
             singleton_albums.append(most_recent_albums[0])
@@ -110,7 +114,9 @@ def filter_duplicate_albums(
             (album, album.total_tracks) for album in remaining_albums_2
         ]
         max_len = max(album_lengths_tuple, key=lambda x: x[1])[1]
-        max_length_albums = [album for album, length in album_lengths_tuple if length == max_len]
+        max_length_albums = [
+            album for album, length in album_lengths_tuple if length == max_len
+        ]
         if True:
             singleton_albums.append(max_length_albums[0])
             continue
@@ -126,7 +132,8 @@ def import_artist_unique_albums(artist_id: str) -> list[Album]:
     )
     albums_to_import = filter_duplicate_albums(all_spotify_albums)
     db_albums = [
-        Album.objects.import_spotify_album(album=spotify_album) for spotify_album in albums_to_import
+        Album.objects.import_spotify_album(album=spotify_album)
+        for spotify_album in albums_to_import
     ]
     return db_albums
 
@@ -186,6 +193,7 @@ def get_artist_track_features(artist_id: str) -> list[SongFeatures]:
 
 def get_non_existing_artist_track_features(artist_id: str) -> list[SongFeatures]:
     albums = client.get_all_artist_albums(artist_id=artist_id)
+
 
 ## Steps for returning artist
 ## Get current list of albums
