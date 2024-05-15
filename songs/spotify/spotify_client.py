@@ -197,8 +197,8 @@ class SpotifyClient:
         return tracks, has_next
 
     def get_all_album_tracks(self, album_id: str, page: int = 0) -> list[SpotifyTrack]:
-        tracks, next = self.get_album_tracks(album_id=album_id, page=page)
-        if not next:
+        tracks, has_next = self.get_album_tracks(album_id=album_id, page=page)
+        if not has_next:
             return tracks
         return tracks + self.get_all_album_tracks(album_id=album_id, page=page + 1)
 
