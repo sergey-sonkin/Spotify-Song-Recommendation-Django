@@ -127,12 +127,17 @@ def filter_duplicate_albums(
 
 
 def import_artist_unique_albums(artist_id: str) -> list[Album]:
+    client = SpotifyClient()
     all_spotify_albums = client.get_all_artist_albums(
         artist_id=artist_id, include_groups=[SpotifyAlbumType.ALBUM]
     )
-    albums_to_import = filter_duplicate_albums(all_spotify_albums)
+    album_partials_to_import = filter_duplicate_albums(all_spotify_albums)
+    albums_to_import = [
+        client.get_complete_album_from_partial(album_partial=partial)
+        for partial in album_partials_to_import
+    ]
     db_albums = [
-        Album.objects.import_spotify_album(album=spotify_album)
+        Album.objects.import_spotify_album(album=spotify_album)  # type: ignore
         for spotify_album in albums_to_import
     ]
     return db_albums
@@ -191,8 +196,8 @@ def get_artist_track_features(artist_id: str) -> list[SongFeatures]:
     ## If artist was not existing, we can just grab their tracks
 
 
-def get_non_existing_artist_track_features(artist_id: str) -> list[SongFeatures]:
-    albums = client.get_all_artist_albums(artist_id=artist_id)
+# def get_non_existing_artist_track_features(artist_id: str) -> list[SongFeatures]:
+#     albums = client.get_all_artist_albums(artist_id=artist_id)
 
 
 ## Steps for returning artist

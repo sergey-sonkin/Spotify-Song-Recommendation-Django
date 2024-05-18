@@ -192,7 +192,7 @@ class SpotifyAlbumPartial:
 
 
 class SpotifyAlbum:
-    album: SpotifyAlbumBase
+    base: SpotifyAlbumBase
     tracks: list[SpotifyTrack]
 
     def __init__(
@@ -200,5 +200,5 @@ class SpotifyAlbum:
         album: SpotifyAlbumBase,
         tracks: list[SpotifyTrack],
     ):
-        self.album = album
+        self.base = album
         self.tracks = tracks

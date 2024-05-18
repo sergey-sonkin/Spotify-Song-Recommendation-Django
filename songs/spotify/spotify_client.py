@@ -1,5 +1,6 @@
 import os
 from itertools import batched
+from typing import Optional
 
 import requests
 
@@ -15,6 +16,7 @@ from songs.spotify.spotify_client_constants import (
     raise_correct_error,
 )
 from songs.spotify.spotify_serializer import (
+    SpotifyAlbum,
     SpotifyAlbumBase,
     SpotifyAlbumPartial,
     SpotifyArtist,
@@ -177,7 +179,7 @@ class SpotifyClient:
     # https://developer.spotify.com/documentation/web-api/reference/get-an-albums-tracks
     def get_album_tracks(
         self, album_id: str, page: int = 0, retries: int = 0
-    ) -> tuple[list[SpotifyTrack], bool]:
+    ) -> tuple[list[SpotifyTrack], Optional[str]]:
         album_tracks_endpoint = f"{BASE_URL}/albums/{album_id}/tracks"
 
         params = {
@@ -192,7 +194,7 @@ class SpotifyClient:
         tracks = [
             SpotifyTrack.from_dict(track_dict) for track_dict in response_json["items"]
         ]
-        has_next = bool(response_json.get("next", None))
+        has_next = response_json.get("next", None)
 
         return tracks, has_next
 
@@ -241,3 +243,19 @@ class SpotifyClient:
             tracks_ids_subset = track_ids[100 * page_number : 100 * (page_number + 1)]
             ret += self.get_up_to_one_hundred_tracks_features(tracks_ids_subset)
         return ret
+
+    def get_complete_album_from_partial(
+        self, album_partial: SpotifyAlbumPartial
+    ) -> SpotifyAlbum:
+        while (next_page := album_partial.next_page) is not None:
+            response_json = self.get_parse_and_error_handle_request(
+                endpoint=next_page, retries=0, params={"limit": MAX_LIMIT}
+            )
+            tracks = [
+                SpotifyTrack.from_dict(track_dict)
+                for track_dict in response_json["items"]
+            ]
+            album_partial.tracks += tracks
+            album_partial.next_page = response_json.get("next", None)
+
+        return SpotifyAlbum(album=album_partial.base, tracks=album_partial.tracks)
