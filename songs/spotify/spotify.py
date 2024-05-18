@@ -184,14 +184,13 @@ def get_artist_track_features(artist_id: str) -> list[SongFeatures]:
 
     # If artist was existing and was recently updated, we can just grab their tracks
     if is_existing and db_artist.recently_updated:
-        db_song_ids = Song.objects.filter(artist_id=artist_id).values_list("id")
-        db_song_features = SongFeatures.objects.filter(pk__in=db_song_ids)
-        ret = list(db_song_features)
-        return ret
-    elif is_existing:
-        raise Exception("Todo!")
+        albums = Album.objects.filter(artist_id=artist_id)
+        track_ids = Song.objects.filter(album=albums).values_list("id")
+        features = SongFeatures.objects.filter(id=track_ids)
+        return list(features)
 
-    return import_new_artist(artist_id)
+    else:
+        return import_artist_albums_songs(artist_id)
 
     ## If artist was not existing, we can just grab their tracks
 
