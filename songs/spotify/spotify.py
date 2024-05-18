@@ -192,8 +192,6 @@ def get_artist_track_features(artist_id: str) -> list[SongFeatures]:
     else:
         return import_artist_albums_songs(artist_id)
 
-    ## If artist was not existing, we can just grab their tracks
-
 
 # def get_non_existing_artist_track_features(artist_id: str) -> list[SongFeatures]:
 #     albums = client.get_all_artist_albums(artist_id=artist_id)
