@@ -36,7 +36,7 @@ class SpotifyClientTestCase(TestCase):
             self.assertEqual(partial_album.next_page, None)
 
     # TODO: Change test to be mock patched
-    def test_complete_album_partial(self):
+    def test_get_complete_album_from_partial(self):
         client = SpotifyClient()
         albums = client.get_all_artist_albums("2IN2VBkdXOBfoXJGrAUV1O")
         partial_albums = client.get_album_partials(albums)
