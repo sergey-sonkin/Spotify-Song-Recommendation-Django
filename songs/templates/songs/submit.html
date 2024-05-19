@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirect Form</title>
+</head>
+<body>
+    <form method="POST" action="{% url 'process_form' %}">
+        {% csrf_token %}
+        <label for="userInput">Enter Text:</label><br>
+        <input type="text" id="userInput" name="userInput"><br>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
