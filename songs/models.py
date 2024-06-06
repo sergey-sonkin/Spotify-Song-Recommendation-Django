@@ -72,8 +72,8 @@ class SongManager(models.Manager):
             is_explicit=track.is_explicit,
             album=album,
         )
-        db_artists: list[SpotifyArtist] = [
-            Artist.objects.get_or_import(spotify_artist=spotify_artist)  # type: ignore
+        db_artists: list[Artist] = [
+            Artist.objects.get_or_import(spotify_artist=spotify_artist)
             for spotify_artist in track.artists
         ]
         db_track.artists.set(db_artists)
