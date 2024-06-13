@@ -46,7 +46,7 @@ class Artist(models.Model):
 class AlbumManager(models.Manager):
     def import_spotify_album(self, album: SpotifyAlbum):
         spotify_artists = album.base.artists
-        db_artists: list[SpotifyArtist] = [
+        db_artists: list[Artist] = [
             Artist.objects.get_or_import(spotify_artist=spotify_artist)  # type: ignore
             for spotify_artist in spotify_artists
         ]
