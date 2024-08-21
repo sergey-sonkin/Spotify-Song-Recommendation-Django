@@ -84,7 +84,7 @@ class Song(models.Model):
     id = models.CharField(primary_key=True, max_length=SPOTIFY_UUID_LENGTH)
     track_name = models.CharField(max_length=ARBITRARY_LENGTH)
     duration_ms = models.IntegerField()
-    release_date = models.DateField(auto_now_add=True)  ## very temporary workaround
+    release_date = models.DateField(auto_now_add=True)  # very temporary workaround
     popularity = models.IntegerField()
     is_explicit = models.BooleanField(default=True)
     artists = models.ManyToManyField(Artist)
