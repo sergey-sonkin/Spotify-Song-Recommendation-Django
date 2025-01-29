@@ -12,6 +12,11 @@ ipython = "*"
 mock = "*"
 django-extensions = "*"
 factory-boy = "*"
+django-rest-framework = "*"
+fastapi = "*"
+uvicorn = "*"
+aiosqlite = "*"
+redis = "*"
 
 [dev-packages]
 ipykernel = "*"
