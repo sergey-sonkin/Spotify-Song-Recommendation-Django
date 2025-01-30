@@ -104,6 +104,7 @@ const SpotifyRecommender = () => {
         },
         body: JSON.stringify({
           artist_id: artistId,
+          artist_name: artistName,
           vote_history: newVoteHistory,
         }),
       });

@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 from typing import AsyncGenerator
 import asyncio
 import json
+import traceback
 
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict
@@ -32,10 +33,26 @@ redis_client = Redis(host="localhost", port=6379, db=0)
 
 from dataclasses import dataclass
 
+@dataclass
+class Song:
+    song_id: str
+    title: str
+    artists: list[str]
+    album_name: str = "album name"
+    popularity: int = 0
+
+    def to_dict(self):
+        return {
+            "song_id": self.song_id,
+            "title": self.title,
+            "artists": self.artists,
+            "album_name": self.album_name,
+            "popularity": self.popularity
+        }
 
 @dataclass
 class TreeNode:
-    song: dict
+    song: Song
     left: Optional["TreeNode"] = None
     right: Optional["TreeNode"] = None
 
@@ -74,7 +91,7 @@ class SessionManager:
         if node is None:
             return None
         return {
-            "song": node.song,
+            "song": node.song.to_dict(),
             "left": self._serialize_tree(node.left) if node.left else None,
             "right": self._serialize_tree(node.right) if node.right else None,
         }
@@ -132,7 +149,7 @@ async def init_db():
         await db.commit()
 
 
-async def ensure_artist_table(db, spotify_id: str, table_name: str):
+async def ensure_artist_table(db, table_name: str):
     """Create artist-specific table if it doesn't exist"""
     await db.execute(
         f"""
@@ -151,29 +168,29 @@ async def ensure_artist_table(db, spotify_id: str, table_name: str):
 def create_mock_decision_tree(artist_name: str) -> TreeNode:
     """Create a mock decision tree 5 levels deep"""
     return TreeNode(
-        song={"title": "Root Song", "artist": artist_name, "id": "1"},
+        song=Song(song_id="0", title="Root song", artists = [], album_name = "Album 0"),
         left=TreeNode(
-            song={"title": "No Song 1", "artist": artist_name, "id": "2"},
+            song=Song(song_id="1", title="No Song 1", artists = [], album_name = "Album 1"),
             left=TreeNode(
-                song={"title": "No-No Song", "artist": artist_name, "id": "4"}
+                song= Song(song_id="2", title="No-No Song", artists = [], album_name = "Album 2"),
             ),
             right=TreeNode(
-                song={"title": "No-Yes Song", "artist": artist_name, "id": "5"}
+                song= Song(song_id="3", title="No-Yes Song", artists = [], album_name = "Album 3"),
             ),
         ),
         right=TreeNode(
-            song={"title": "Yes Song 1", "artist": artist_name, "id": "3"},
+            song=Song(song_id="4", title="Yes Song 1", artists = [], album_name = "Album 4"),
             left=TreeNode(
-                song={"title": "Yes-No Song", "artist": artist_name, "id": "6"}
+                song= Song(song_id="5", title="Yes-No Song", artists = [], album_name = "Album 5"),
             ),
             right=TreeNode(
-                song={"title": "Yes-Yes Song", "artist": artist_name, "id": "7"}
+                song= Song(song_id="6", title="yes-Yes Song", artists = [], album_name = "Album 6"),
             ),
         ),
     )
 
 
-def get_next_song(tree: TreeNode, vote_history: list) -> Optional[dict]:
+def get_next_song(tree: TreeNode, vote_history: list) -> Optional[Song]:
     """Navigate tree based on vote history"""
     current = tree
     for vote in vote_history:
@@ -191,7 +208,7 @@ active_searches = {}
 
 
 async def check_artist_status(
-    spotify_id: str, artist_name: str = None, debug: bool = False
+    spotify_id: str, artist_name: str, debug: bool = False
 ) -> tuple[bool, str]:
     """
     Check if we need to update songs for this artist
@@ -213,7 +230,7 @@ async def check_artist_status(
                 "INSERT INTO artists (spotify_id, name, table_name, last_updated) VALUES (?, ?, ?, ?)",
                 (spotify_id, artist_name, table_name, datetime.now().isoformat()),
             )
-            await ensure_artist_table(db, spotify_id, table_name)
+            await ensure_artist_table(db=db, table_name=table_name)
             return True, table_name
 
         last_updated = datetime.fromisoformat(result[0])
@@ -222,7 +239,7 @@ async def check_artist_status(
         return last_updated < two_weeks_ago, table_name
 
 
-async def update_artist_songs(artist_name: str, songs: list):
+async def update_artist_songs(spotify_id: str, artist_name: str, songs: list):
     """Store or update songs for an artist"""
     table_name = await sanitize_table_name(artist_name)
 
@@ -234,7 +251,8 @@ async def update_artist_songs(artist_name: str, songs: list):
         )
 
         # Ensure table exists
-        await ensure_artist_table(db, artist_name, table_name)
+        print(f"Ensuring table {table_name=}")
+        await ensure_artist_table(db=db, table_name=table_name)
 
         # Clear existing songs (optional, depends on your update strategy)
         await db.execute(f"DELETE FROM {table_name}")
@@ -244,13 +262,13 @@ async def update_artist_songs(artist_name: str, songs: list):
             await db.execute(
                 f"""
                 INSERT OR REPLACE INTO {table_name}
-                (title, spotify_id, album, popularity)
+                (title, spotify_id, album_name, popularity)
                 VALUES (?, ?, ?, ?)
             """,
                 (
                     song["title"],
                     song.get("spotify_id"),
-                    song.get("album"),
+                    song.get("album_name"),
                     song.get("popularity", 0),
                 ),
             )
@@ -264,7 +282,7 @@ async def search_songs_for_artist(
     """Search for songs, updating database if necessary"""
     if debug:
         print(f"Checking artist status for {artist_name=}")
-    needs_update, table_name = await check_artist_status(artist_name, debug=True)
+    needs_update, table_name = await check_artist_status(spotify_id=spotify_id, artist_name=artist_name, debug=True)
     if debug:
         print(f"Finished checking artist status for {artist_name=}")
 
@@ -284,13 +302,13 @@ async def search_songs_for_artist(
                 "popularity": 80,
             },
         ]
-        await update_artist_songs(artist_name, songs)
+        await update_artist_songs(spotify_id=spotify_id,artist_name=artist_name, songs=songs)
 
     # Retrieve songs from database
     async with aiosqlite.connect("songs.db") as db:
         cursor = await db.execute(
             f"""
-            SELECT title, spotify_id, album, popularity
+            SELECT title, spotify_id, album_name, popularity
             FROM {table_name}
         """
         )
@@ -310,7 +328,7 @@ async def search_songs_for_artist(
 
 async def event_generator(search_id: str) -> AsyncGenerator[str, None]:
     """Generate SSE events"""
-    debug = False
+    debug = True  # Set to True to enable detailed debugging
     try:
         # Send initial searching status
         yield f"data: {json.dumps({'status': 'searching', 'progress': 0})}\n\n"
@@ -318,44 +336,76 @@ async def event_generator(search_id: str) -> AsyncGenerator[str, None]:
             print("Yielded initial response")
 
         # Get artist info from active_searches
-        spotify_id = active_searches[search_id]["spotify_id"]
-        artist_name = active_searches[search_id]["artist_name"]
+        try:
+            spotify_id = active_searches[search_id]["spotify_id"]
+            artist_name = active_searches[search_id]["artist_name"]
+            if debug:
+                print(f"Retrieved artist info: {spotify_id=}, {artist_name=}")
+        except KeyError as e:
+            print(f"Error accessing active_searches: {e}")
+            raise
 
         # Process artist and create decision tree
-        await search_songs_for_artist(
-            spotify_id=spotify_id, artist_name=artist_name, debug=True
-        )  # Get/update songs in DB
-        if debug:
-            print(f"Finished searching songs for artist {spotify_id=}")
-        tree = await create_decision_tree(
-            spotify_id=spotify_id, artist_name=artist_name
-        )  # Create recommendation tree
-        if debug:
-            print(f"Finished creating decision tree for {spotify_id=}")
+        try:
+            songs = await search_songs_for_artist(
+                spotify_id=spotify_id, artist_name=artist_name, debug=True
+            )
+            if debug:
+                print(f"Retrieved songs: {songs}")
+        except Exception as e:
+            print(f"Error in search_songs_for_artist: {e}")
+            print(f"Error type: {type(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            raise
+
+        try:
+            tree = await create_decision_tree(
+                spotify_id=spotify_id, artist_name=artist_name
+            )
+            if debug:
+                print(f"Created decision tree for {spotify_id=}")
+        except Exception as e:
+            print(f"Error in create_decision_tree: {e}")
+            raise
 
         # Store tree in Redis
-        await session_manager.create_session(
-            search_id=search_id,
-            spotify_id=spotify_id,
-            artist_name=artist_name,
-            tree=tree,
-        )
-        print(f"Created session in Redis for {search_id=} {spotify_id=}")
+        try:
+            await session_manager.create_session(
+                search_id=search_id,
+                spotify_id=spotify_id,
+                artist_name=artist_name,
+                tree=tree,
+            )
+            if debug:
+                print(f"Created Redis session for {search_id=}")
+        except Exception as e:
+            print(f"Error creating Redis session: {e}")
+            raise
 
         # Send completion status with first song
         yield f"data: {json.dumps({
             'status': 'completed',
-            'song': tree.song,
+            'song': tree.song.to_dict(),
             'artistId': spotify_id,
             'artistName': artist_name
         })}\n\n"
 
     except Exception as e:
-        yield f"data: {json.dumps({'status': 'error', 'message': str(e)})}\n\n"
+        error_message = {
+            'status': 'error',
+            'message': str(e),
+            'type': str(type(e)),
+            'traceback': traceback.format_exc()
+        }
+        print(f"Error in event_generator: {error_message}")
+        yield f"data: {json.dumps(error_message)}\n\n"
 
-    # Cleanup
-    if search_id in active_searches:
-        del active_searches[search_id]
+    finally:
+        # Cleanup
+        if search_id in active_searches:
+            del active_searches[search_id]
+            if debug:
+                print(f"Cleaned up search_id {search_id}")
 
 
 active_sessions = {}
@@ -364,7 +414,7 @@ active_sessions = {}
 @app.post("/api/vote")
 async def record_vote(request: Request):
     data = await request.json()
-    artist_name = data["artist"]
+    artist_name = data["artist_name"]
     vote_history = data["vote_history"]
 
     # Create/get tree and navigate to next song
@@ -374,7 +424,7 @@ async def record_vote(request: Request):
     if next_song is None:
         return {"status": "complete"}
 
-    return {"status": "continue", "song": next_song}
+    return {"status": "continue", "song": next_song.to_dict()}
 
 
 @app.post("/api/start-search")
@@ -386,7 +436,7 @@ async def start_search(request: Request):
     # Here you'll need to add Spotify API call to search for artist
     # and get their Spotify ID and name
     spotify_id = search_query
-    artist_name = f"Artist {search_query}"
+    artist_name = f"Artist_{search_query}"
 
     # Store in active_searches for SSE updates
     active_searches[search_id] = {"spotify_id": spotify_id, "artist_name": artist_name}
