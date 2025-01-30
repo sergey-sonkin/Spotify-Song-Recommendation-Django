@@ -178,12 +178,14 @@ async def check_artist_status(artist_name: str, debug: bool = False) -> tuple[bo
     async with aiosqlite.connect('songs.db') as db:
         cursor = await db.execute(
             'SELECT last_updated FROM artists WHERE name = ?',
-            (artist_name,)
+            (artist_name.lower(),)
         )
         result = await cursor.fetchone()
 
         if result is None:
             # New artist - create entry and table
+            if debug:
+                print(f"Creating new artist entry for {artist_name=}")
             await db.execute(
                 'INSERT INTO artists (name, table_name, last_updated) VALUES (?, ?, ?)',
                 (artist_name, table_name, datetime.now().isoformat())
@@ -233,7 +235,7 @@ async def search_songs_for_artist(artist_name: str, debug = False) -> list:
     """Search for songs, updating database if necessary"""
     if debug:
         print(f"Checking artist status for {artist_name=}")
-    needs_update, table_name = await check_artist_status(artist_name)
+    needs_update, table_name = await check_artist_status(artist_name, debug=True)
     if debug:
         print(f"Finished checking artist status for {artist_name=}")
 
