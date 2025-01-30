@@ -9,6 +9,8 @@ const SpotifyRecommender = () => {
   const [currentState, setCurrentState] = useState("search");
   const [currentSong, setCurrentSong] = useState(null);
   const [voteHistory, setVoteHistory] = useState([]);
+  const [artistId, setArtistId] = useState(null);
+  const [artistName, setArtistName] = useState(null);
   const [artist, setArtist] = useState(null);
   const [searchId, setSearchId] = useState(null);
 
@@ -22,11 +24,15 @@ const SpotifyRecommender = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ artist: searchQuery }),
+        body: JSON.stringify({
+          spotifyId: searchQuery, // The search term
+        }),
       });
 
       const data = await response.json();
       setSearchId(data.searchId);
+      setArtistId(data.artistId);
+      setArtistName(data.artistName);
 
       // Set up SSE to monitor processing
       const eventSource = new EventSource(
@@ -97,7 +103,7 @@ const SpotifyRecommender = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          artist: artist,
+          artist_id: artistId,
           vote_history: newVoteHistory,
         }),
       });
